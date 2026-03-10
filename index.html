@@ -196,7 +196,16 @@
         }
         
         let now = new Date();
-        let logTime = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+                    // 取得 YYYY-MM-DD 格式
+             let year = now.getFullYear();
+             let month = (now.getMonth() + 1).toString().padStart(2, '0');
+            let day = now.getDate().toString().padStart(2, '0');
+                    // 取得 HH:mm 格式
+                let hours = now.getHours().toString().padStart(2, '0');
+                let minutes = now.getMinutes().toString().padStart(2, '0');
+
+                // 組合出你需要的完整格式 (例如: 2024-10-25 14:30)
+                let logTime = `${year}-${month}-${day} ${hours}:${minutes}`;
         
         let logEntry = {
             time: logTime,
