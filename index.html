@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 微台 × ST 全自動觀測站</title>
+    <style>
+        :root { --bg-color: #121826; --panel-bg: #1f2937; --text-main: #f3f4f6; --text-muted: #9ca3af; --green: #10b981; --red: #ef4444; --border: #374151; --blue: #3b82f6;}
+        body { font-family: sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 15px; }
+        .container { max-width: 600px; margin: auto; }
+        h2 { text-align: center; color: var(--blue); margin-top: 5px; font-size: 22px; }
+        .panel { background-color: var(--panel-bg); border: 1px solid var(--border); border-radius: 10px; padding: 15px; margin-bottom: 15px;}
+        
+        /* 雲端狀態面板 */
+        .cloud-status { background: rgba(59, 130, 246, 0.1); border: 1px solid var(--blue); padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s;}
+        .cloud-status:active { transform: scale(0.98); }
+        
+        .row { display: flex; gap: 10px; margin-top: 15px;}
+        .col { flex: 1; text-align: center; padding: 15px; border-radius: 8px; border: 1px solid var(--border); background: #111827; display: flex; flex-direction: column; justify-content: center;}
+        
+        .title-label { font-size: 13px; color: var(--text-muted); margin-bottom: 5px;}
+        .data-value { font-size: 24px; font-weight: bold; }
+
+        .status-box { padding: 20px; border-radius: 8px; font-size: 20px; font-weight: bold; text-align: center; min-height: 80px; display: flex; flex-direction: column; justify-content: center; border: 2px dashed var(--border); margin-top: 15px;}
+        .status-approved { background-color: rgba(16, 185, 129, 0.2); border-color: var(--green); color: var(--green); }
+        .status-rejected { background-color: rgba(239, 68, 68, 0.2); border-color: var(--red); color: var(--red); }
+        .status-neutral { background-color: #374151; color: var(--text-main); border-style: solid; }
+        
+        button { width: 100%; padding: 15px; font-size: 16px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; transition: 0.2s;}
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px;}
+        th, td { padding: 10px; text-align: center; border-bottom: 1px solid var(--border); }
+        th { background-color: #111827; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🎯 微台 × ST 雲端觀測站</h2>
+    
+    <!-- 雲端同步按鈕 -->
+    <div class="cloud-status" onclick="fetchGoogleSheet()">
+        <div>
+            <div style="font-size: 12px; color: #60a5fa;">🟢 點擊此處可手動刷新</div>
+            <div style="font-weight: bold; font-size: 14px;" id="syncText">與 Google 雲端同步中...</div>
+        </div>
+        <div style="text-align: right;">
+            <div style="font-size: 12px; color: var(--text-muted);">最後更新時間</div>
+            <div id="cloudTime" style="font-size: 14px; font-weight: bold; color: white;">載入中...</div>
+        </div>
+    </div>
+
+    <!-- 雲端數據儀表板 -->
+    <div class="row">
+        <!-- 第一判斷條件：ST 方向 -->
+        <div class="col" id="stCard">
+            <div class="title-label">📌 雲端 ST 訊號</div>
+            <div id="cloudST" class="data-value" style="color: white;">讀取中</div>
+            <div id="cloudPrice" style="font-size: 12px; color: gray; margin-top: 5px;"></div>
+        </div>
+        <!-- 第二判斷條件：散戶籌碼 -->
+        <div class="col">
+            <div class="title-label">⚡ 微台散戶多空比</div>
+            <div id="cloudRatio" class="data-value" style="color: white;">讀取中</div>
+        </div>
+    </div>
+
+    <!-- 系統自動雙重確認判定 -->
+    <div class="panel" style="margin-top: 15px; border-left: 5px solid var(--blue);">
+        <label style="color: #60a5fa; font-weight: bold;">🧠 系統最終判定</label>
+        <div id="strategyBox" class="status-box status-neutral">
+            等待雲端資料載入...
+        </div>
+        <button style="background: var(--blue); color: white; margin-top: 15px;" onclick="logSignal()">💾 紀錄當下觀測狀態</button>
+    </div>
+
+    <!-- 客戶端本地歷史紀錄 -->
+    <div class="panel" style="overflow-x: auto;">
+        <label style="color: var(--text-muted); font-weight: bold; font-size: 14px;">📋 我的觀測紀錄</label>
+        <table>
+            <thead><tr><th>紀錄時間</th><th>ST 訊號</th><th>當時籌碼</th><th>判定結果</th></tr></thead>
+            <tbody id="logTableBody"></tbody>
+        </table>
+        <button onclick="clearLogs()" style="background: transparent; color: gray; font-size: 12px; margin-top: 10px; padding: 5px;">清除所有紀錄</button>
+    </div>
+</div>
+
+<script>
+    // 🔴🔴🔴 請在這裡貼上你 Google 試算表發布的 CSV 網址 🔴🔴🔴
+    const GOOGLE_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTjF_5sGbShxJ_e0m_AwhBtZirT2DGgQVpMxW2wy5Jt95Sc7TXa_IAL5Gjt0N2whk_xGuJimnFGvqgD/pub?output=csv";
+
+    // 全域變數儲存雲端狀態
+    let currentData = {
+        time: "",
+        ratio: null,
+        st: "",
+        price: "",
+        actionResult: "",
+        isApproved: false
+    };
+
+    // --- 🚀 核心：讀取 Google 試算表並自動判定 ---
+    async function fetchGoogleSheet() {
+        document.getElementById('syncText').innerText = "🔄 資料抓取中...";
+        try {
+            const res = await fetch(GOOGLE_CSV_URL + "&t=" + new Date().getTime());
+            const csvText = await res.text();
+            
+            // 解析 CSV
+            const rows = csvText.split('\n');
+            const dataRow = rows[1].split(','); 
+            
+            // 寫入變數 (對應 A, B, C, D 欄位)
+            currentData.time = dataRow[0] ? dataRow[0].trim() : "未填寫";
+            currentData.ratio = parseFloat(dataRow[1].trim());
+            currentData.st = dataRow[2] ? dataRow[2].trim().toUpperCase() : "";
+            currentData.price = dataRow[3] ? dataRow[3].trim() : "";
+
+            updateDashboardUI();
+            evaluateStrategy();
+            
+            document.getElementById('syncText').innerText = "✅ 同步成功 (點擊刷新)";
+        } catch (error) {
+            document.getElementById('syncText').innerHTML = `<span style="color:red;">❌ 讀取失敗，請檢查網路</span>`;
+            console.error(error);
+        }
+    }
+
+    // 更新上半部儀表板畫面
+    function updateDashboardUI() {
+        document.getElementById('cloudTime').innerText = currentData.time;
+
+        // 1. 處理籌碼顯示
+        let ratioColor = currentData.ratio >= 0 ? "#ef4444" : "#10b981"; 
+        document.getElementById('cloudRatio').innerHTML = `<span style="color:${ratioColor}">${currentData.ratio}%</span>`;
+
+        // 2. 處理 ST 方向顯示
+        let stCard = document.getElementById('stCard');
+        let stText = document.getElementById('cloudST');
+        
+        if (currentData.st === 'LONG') {
+            stCard.style.borderColor = "#10b981";
+            stText.innerHTML = `<span style="color:#10b981">🟢 做多 (LONG)</span>`;
+        } else if (currentData.st === 'SHORT') {
+            stCard.style.borderColor = "#ef4444";
+            stText.innerHTML = `<span style="color:#ef4444">🔴 做空 (SHORT)</span>`;
+        } else {
+            stCard.style.borderColor = "#374151";
+            stText.innerText = "尚未指定";
+        }
+
+        // 3. 處理點位顯示
+        document.getElementById('cloudPrice').innerText = currentData.price ? `點位: ${currentData.price}` : "";
+    }
+
+    // --- 🧠 核心雙重確認邏輯 (ST為第一條件) ---
+    function evaluateStrategy() {
+        let box = document.getElementById('strategyBox');
+        box.className = "status-box"; 
+
+        if (currentData.st === "") {
+            box.innerHTML = "等待雲端發布 ST 訊號方向...";
+            box.classList.add("status-neutral");
+            return;
+        }
+
+        if (currentData.st === 'LONG') {
+            if (currentData.ratio < 0) {
+                currentData.isApproved = true; 
+                currentData.actionResult = "✅ 准許做多<br><span style='font-size:14px; font-weight:normal;'>ST 翻多，且散戶在做空 (軋空契機)</span>"; 
+                box.classList.add("status-approved");
+            } else {
+                currentData.isApproved = false; 
+                currentData.actionResult = "❌ 放棄做多<br><span style='font-size:14px; font-weight:normal;'>ST 翻多，但散戶也在追多 (提防騙線)</span>"; 
+                box.classList.add("status-rejected");
+            }
+        } else if (currentData.st === 'SHORT') {
+            if (currentData.ratio > 0) {
+                currentData.isApproved = true; 
+                currentData.actionResult = "✅ 准許做空<br><span style='font-size:14px; font-weight:normal;'>ST 翻空，且散戶在做多 (殺多契機)</span>"; 
+                box.classList.add("status-approved");
+            } else {
+                currentData.isApproved = false; 
+                currentData.actionResult = "❌ 放棄做空<br><span style='font-size:14px; font-weight:normal;'>ST 翻空，但散戶也在追空 (提防假跌破)</span>"; 
+                box.classList.add("status-rejected");
+            }
+        }
+        
+        box.innerHTML = currentData.actionResult;
+    }
+
+    // 寫入觀測紀錄 (存在客戶的手機裡)
+    function logSignal() {
+        if (!currentData.st || currentData.ratio === null) { 
+            alert("雲端資料尚未準備好，無法紀錄！"); 
+            return; 
+        }
+        
+        let now = new Date();
+        let logTime = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+        
+        let logEntry = {
+            time: logTime,
+            signal: currentData.st === 'LONG' ? '🟢 多' : '🔴 空',
+            ratio: currentData.ratio + "%",
+            action: currentData.isApproved ? "✅ 核准" : "❌ 放棄",
+            color: currentData.isApproved ? "color: #10b981; font-weight: bold;" : "color: #9ca3af; text-decoration: line-through;"
+        };
+
+        let logs = JSON.parse(localStorage.getItem('myLogs') || "[]");
+        logs.unshift(logEntry);
+        localStorage.setItem('myLogs', JSON.stringify(logs));
+        renderTable();
+    }
+
+    function renderTable() {
+        let logs = JSON.parse(localStorage.getItem('myLogs') || "[]");
+        let tbody = document.getElementById('logTableBody');
+        tbody.innerHTML = "";
+        logs.forEach(log => {
+            tbody.innerHTML += `<tr><td>${log.time}</td><td>${log.signal}</td><td>${log.ratio}</td><td style="${log.color}">${log.action}</td></tr>`;
+        });
+    }
+
+    function clearLogs() {
+        if(confirm("確定要清除本機所有紀錄嗎？")) { localStorage.removeItem('myLogs'); renderTable(); }
+    }
+
+    // 啟動程式：一打開網頁就自動抓取
+    fetchGoogleSheet();
+    renderTable();
+</script>
+</body>
+</html>
