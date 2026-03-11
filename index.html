@@ -3,15 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- 網頁標題 -->
     <title>🎯 台指期主力多空雷達觀測站</title>
     
-    <!-- 👇👇👇 專門給 LINE / FB 看的社群預覽標籤 👇👇👇 -->
+    <!-- 專門給 LINE / FB 看的社群預覽標籤 -->
     <meta property="og:title" content="🎯 台指期主力多空雷達觀測站">
     <meta property="og:description" content="全自動雲端運算：結合散戶燃料、趨勢指標與神奇均線，三維度精準判定台指多空方向！">
     <meta property="og:type" content="website">
-    <!-- 👆👆👆 專門給 LINE / FB 看的社群預覽標籤 👆👆👆 -->
 
     <style>
         :root { --bg-color: #121826; --panel-bg: #1f2937; --text-main: #f3f4f6; --text-muted: #9ca3af; --green: #10b981; --red: #ef4444; --border: #374151; --blue: #3b82f6; --yellow: #f59e0b; --purple: #a855f7;}
@@ -40,15 +37,50 @@
         button.main-btn { width: 100%; padding: 15px; font-size: 16px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; transition: 0.2s; background: var(--blue); color: white; margin-top: 15px;}
         button.main-btn:hover { background: #2563eb; }
 
+        /* 四象限說明表專屬樣式 */
         .info-toggle { text-align: center; font-size: 13px; color: var(--text-muted); cursor: pointer; margin-top: 15px; text-decoration: underline; padding: 5px;}
-        .info-box { display: none; background: #111827; border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-top: 10px; font-size: 12px; line-height: 1.6;}
-        .info-box h4 { margin: 0 0 10px 0; color: #60a5fa; text-align: center; font-size: 14px;}
-        .info-grid { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center;}
-        .badge { padding: 2px 6px; border-radius: 4px; font-weight: bold; text-align: center; font-size: 11px;}
-        .b-green { background: rgba(16, 185, 129, 0.2); color: var(--green); border: 1px solid var(--green);}
-        .b-yellow { background: rgba(245, 158, 11, 0.2); color: var(--yellow); border: 1px solid var(--yellow);}
-        .b-purple { background: rgba(168, 85, 247, 0.2); color: var(--purple); border: 1px solid var(--purple);}
-        .b-red { background: rgba(239, 68, 68, 0.2); color: var(--red); border: 1px solid var(--red);}
+        .info-box { display: none; background: #111827; border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-top: 10px;}
+        .info-box h4 { margin: 0 0 15px 0; color: #60a5fa; text-align: center; font-size: 15px;}
+        
+        /* 四象限網格配置 */
+        .quadrant-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 10px;
+            position: relative;
+        }
+        /* 十字分隔線 (利用偽元素產生) */
+        .quadrant-grid::before {
+            content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background: var(--border); transform: translateX(-50%);
+        }
+        .quadrant-grid::after {
+            content: ""; position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: var(--border); transform: translateY(-50%);
+        }
+        
+        /* 每個象限的卡片 */
+        .quad-card {
+            background: #1f2937;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            z-index: 1; /* 確保在十字線上層 */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 90px;
+        }
+        .quad-title { font-size: 14px; font-weight: bold; margin-bottom: 5px; }
+        .quad-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+        
+        /* 四象限的特定顏色 */
+        .q-top-left { border: 1px solid var(--green); box-shadow: inset 0 0 10px rgba(16,185,129,0.1); }
+        .q-top-right { border: 1px solid var(--yellow); box-shadow: inset 0 0 10px rgba(245,158,11,0.1); }
+        .q-bottom-left { border: 1px solid var(--purple); box-shadow: inset 0 0 10px rgba(168,85,247,0.1); }
+        .q-bottom-right { border: 1px solid var(--red); box-shadow: inset 0 0 10px rgba(239,68,68,0.1); }
+
+        /* 象限軸線標籤 */
+        .axis-label { text-align: center; font-size: 11px; color: #60a5fa; font-weight: bold; margin-bottom: 5px; margin-top: 10px;}
         
         .table-container { overflow-x: auto; margin-top: 10px; }
         table.log-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 500px; }
@@ -100,24 +132,42 @@
         </div>
         <button class="main-btn" onclick="logSignal()">💾 紀錄當下觀測狀態</button>
 
-        <!-- 判定規則說明表 -->
-        <div class="info-toggle" onclick="toggleInfo()">📖 點擊查看【系統判定規則表】</div>
+        <!-- 四象限判定規則說明表 (點擊展開) -->
+        <div class="info-toggle" onclick="toggleInfo()">📖 點擊查看【四象限判定規則矩陣】</div>
         <div class="info-box" id="infoBox">
-            <h4>📊 以 趨勢指標(做多) 為例，大腦判斷邏輯：</h4>
-            <div class="info-grid">
-                <div class="badge b-green">🌟 完美順勢</div>
-                <div>趨勢指標 翻多 ＋ 在 神奇均線之上 ＋ 籌碼小於 0% (微多/中多/強多)</div>
-                
-                <div class="badge b-purple">🔮 特赦微量</div>
-                <div>趨勢指標 翻多 ＋ 在 神奇均線之上 ＋ 籌碼在 0~10% (微空衝突，技術面過關可試單)</div>
-
-                <div class="badge b-yellow">⚠️ 逆勢搶彈</div>
-                <div>趨勢指標 翻多 ＋ 籌碼支持 ＋ <span style="color:var(--red);">但在 神奇均線之下</span> (逆大趨勢，需縮小部位)</div>
-
-                <div class="badge b-red">❌ 拒絕做多</div>
-                <div>趨勢指標 翻多 ＋ 籌碼大於 10% (散戶正在追多，提防假突破被騙線)</div>
+            <h4>📊 系統大腦決策矩陣 (以做多為例)</h4>
+            
+            <div class="axis-label">⬆️ 籌碼面強勢 (散戶恐慌做空)</div>
+            
+            <div class="quadrant-grid">
+                <!-- 第一象限 (左上) -->
+                <div class="quad-card q-top-left">
+                    <div class="quad-title" style="color: var(--green);">🌟 完美順勢</div>
+                    <div class="quad-desc">指標/均線皆多<br>＋ 籌碼強烈助攻<br>(主力極易軋空)</div>
+                </div>
+                <!-- 第二象限 (右上) -->
+                <div class="quad-card q-top-right">
+                    <div class="quad-title" style="color: var(--yellow);">⚠️ 逆勢搶彈</div>
+                    <div class="quad-desc">指標/籌碼偏多<br>＋ 均線仍在空方<br>(逆勢單需縮小部位)</div>
+                </div>
+                <!-- 第三象限 (左下) -->
+                <div class="quad-card q-bottom-left">
+                    <div class="quad-title" style="color: var(--purple);">🔮 特赦微量</div>
+                    <div class="quad-desc">指標/均線皆多<br>＋ 籌碼微弱衝突<br>(技術面優勢，可試單)</div>
+                </div>
+                <!-- 第四象限 (右下) -->
+                <div class="quad-card q-bottom-right">
+                    <div class="quad-title" style="color: var(--red);">❌ 拒絕進場</div>
+                    <div class="quad-desc">指標翻多<br>＋ 散戶強烈追多<br>(極高機率假突破騙線)</div>
+                </div>
             </div>
-            <div style="margin-top: 8px; color: #9ca3af; text-align: center; font-style: italic;">※ 趨勢指標 做空則邏輯完全相反</div>
+            
+            <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                <div class="axis-label" style="width: 50%; text-align: center;">⬅️ 技術面強勢<br>(指標/均線共振)</div>
+                <div class="axis-label" style="width: 50%; text-align: center; color: var(--text-muted);">技術面弱勢 ➡️<br>(指標/均線分歧)</div>
+            </div>
+            
+            <div style="margin-top: 15px; color: #9ca3af; text-align: center; font-style: italic; font-size: 11px;">※ 若趨勢指標為做空，則散戶做多為燃料，邏輯完全相反。</div>
         </div>
     </div>
 
