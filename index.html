@@ -3,8 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- 1. 更新標籤名稱 -->
+    
+    <!-- 網頁標題 -->
     <title>🎯 台指期主力多空雷達觀測站</title>
+    
+    <!-- 👇👇👇 專門給 LINE / FB 看的社群預覽標籤 👇👇👇 -->
+    <meta property="og:title" content="🎯 台指期主力多空雷達觀測站">
+    <meta property="og:description" content="全自動雲端運算：結合散戶燃料、趨勢指標與神奇均線，三維度精準判定台指多空方向！">
+    <meta property="og:type" content="website">
+    <!-- 👆👆👆 專門給 LINE / FB 看的社群預覽標籤 👆👆👆 -->
+
     <style>
         :root { --bg-color: #121826; --panel-bg: #1f2937; --text-main: #f3f4f6; --text-muted: #9ca3af; --green: #10b981; --red: #ef4444; --border: #374151; --blue: #3b82f6; --yellow: #f59e0b; --purple: #a855f7;}
         body { font-family: sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 15px; }
@@ -52,7 +60,6 @@
 <body>
 
 <div class="container">
-    <!-- 2. 更新網頁主標題 -->
     <h2>🎯 台指期主力多空雷達觀測站</h2>
     
     <div class="cloud-status" onclick="fetchGoogleSheet()">
@@ -69,13 +76,11 @@
     <!-- 雲端數據儀表板 -->
     <div class="row">
         <div class="col" id="stCard">
-            <!-- 3. 更新為趨勢指標 -->
             <div class="title-label">📌 趨勢指標 (4H)</div>
             <div id="cloudST" class="data-value">讀取中</div>
             <div id="cloudPrice" style="font-size: 11px; color: gray; margin-top: 5px;"></div>
         </div>
         <div class="col" id="maCard">
-            <!-- 4. 更新為神奇均線 -->
             <div class="title-label">🛡️ 神奇均線 (4H)</div>
             <div id="cloudMA" class="data-value" style="color: white;">讀取中</div>
             <div id="cloudMASlope" class="sub-value" style="background: #374151; color: white;">讀取中</div>
@@ -124,7 +129,6 @@
                 <thead>
                     <tr>
                         <th>紀錄時間</th>
-                        <!-- 5. 修正表格標題 -->
                         <th>趨勢指標</th>
                         <th>神奇均線</th>
                         <th>散戶籌碼</th>
@@ -142,7 +146,6 @@
     // 🔴🔴🔴 請替換成你的 Google CSV 網址 🔴🔴🔴
     const GOOGLE_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTjF_5sGbShxJ_e0m_AwhBtZirT2DGgQVpMxW2wy5Jt95Sc7TXa_IAL5Gjt0N2whk_xGuJimnFGvqgD/pub?output=csv";
 
-    // 增加 actionTitle 變數，用來將判定結果原封不動存入表格
     let currentData = {
         time: "", ratio: null, ratioText: "",
         st: "", price: "", 
@@ -294,7 +297,6 @@
         if (currentData.statusClass === 'status-warning') logColor = "color: var(--yellow);";
         if (currentData.statusClass === 'status-amnesty') logColor = "color: var(--purple); font-weight: bold;";
 
-        // 6. 讓表格紀錄完全等於系統大腦的標題
         let logEntry = {
             time: fullTimeStr,
             signal: currentData.st === 'LONG' ? '🟢 多' : '🔴 空',
