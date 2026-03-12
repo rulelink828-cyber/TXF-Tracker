@@ -1,0 +1,16 @@
+{
+  "name": "台指期主力多空雷達觀測站",
+  "short_name": "主力雷達",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#121826",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3256/3256094.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
