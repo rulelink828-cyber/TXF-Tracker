@@ -9,7 +9,24 @@
     <meta property="og:title" content="🎯 台指期主力多空雷達觀測站">
     <meta property="og:description" content="全自動雲端運算：結合散戶燃料、趨勢指標與神奇均線，三維度精準判定台指多空方向！">
     <meta property="og:type" content="website">
-
+code
+Html
+<!-- 👇👇👇 PWA 安裝必備標籤 👇👇👇 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121826">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3256/3256094.png">
+    
+    <script>
+        // 註冊 Service Worker 讓手機識別為 APP
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker 註冊成功'))
+                    .catch(err => console.log('Service Worker 註冊失敗', err));
+            });
+        }
+    </script>
+    <!-- 👆👆👆 PWA 安裝必備標籤 👆👆👆 -->
     <style>
         :root { --bg-color: #121826; --panel-bg: #1f2937; --text-main: #f3f4f6; --text-muted: #9ca3af; --green: #10b981; --red: #ef4444; --border: #374151; --blue: #3b82f6; --yellow: #f59e0b; --purple: #a855f7;}
         body { font-family: sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 15px; }
